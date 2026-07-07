@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import timedelta
 from config.env import env
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -18,7 +19,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'drf_spectacular',
+    'django_filters',
     'core',
+    'authentication',
+    'products',
 ]
 
 MIDDLEWARE = [
@@ -56,6 +60,18 @@ DATABASES = {
     'default': env.db('DATABASE_URL')
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': env.str('REDIS_URL', default='redis://redis:6379/0'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+    }
+}
+
+AUTH_USER_MODEL = 'authentication.User'
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -85,18 +101,34 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'core.pagination.StandardLimitOffsetPagination',
     'EXCEPTION_HANDLER': 'core.exceptions.api_exception_handler',
     'DEFAULT_SCHEMA_CLASS': 'core.schema.ApiAutoSchema',
 }
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Task Management Server API',
-    'DESCRIPTION': 'API documentation for the Task Management Server project',
+    'TITLE': 'E-Commerce order and Payment system',
+    'DESCRIPTION': 'API documentation for E-Commerce order and Payment system project',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
 }
 
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
