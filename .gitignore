@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Documentation
+docs/
+.docs/
+
+# IDE and cache directories
+.cache/
+.idea/
+.vscode/
+*.swp
+
+# Agent
+.agents/
+
