@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
+from django.utils.text import slugify
 
 from authentication.models import User
 from products.models import Category, Product
@@ -58,7 +59,7 @@ class Command(BaseCommand):
             for name, data in tree.items():
                 cat, was_created = Category.objects.get_or_create(
                     name=name,
-                    defaults={'parent': parent},
+                    defaults={'slug': slugify(name), 'parent': parent},
                 )
                 if was_created:
                     self.stdout.write(f'  Created category: {name}')

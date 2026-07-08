@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 
@@ -30,7 +33,9 @@ class Product(BaseModel):
     name = models.CharField(max_length=255)
     sku = models.CharField(max_length=100, unique=True, db_index=True)
     description = models.TextField(blank=True, default='')
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))],
+    )
     stock = models.PositiveIntegerField(default=0)
     status = models.CharField(
         max_length=10,

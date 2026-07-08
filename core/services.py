@@ -25,6 +25,7 @@ def model_update(
 
     if has_updated:
         instance.full_clean()
+        updated_fields.append('updated_at')
         instance.save(update_fields=updated_fields)
 
     return instance, has_updated

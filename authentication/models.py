@@ -3,7 +3,6 @@ from django.db import models
 
 from core.models import BaseModel
 
-
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
