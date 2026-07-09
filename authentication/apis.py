@@ -64,7 +64,7 @@ class UserLoginAPI(APIView):
 
         user = authenticate(
             request,
-            username=input_serializer.validated_data['email'],
+            username=input_serializer.validated_data['email'].lower(),
             password=input_serializer.validated_data['password'],
         )
 

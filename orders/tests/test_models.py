@@ -88,8 +88,9 @@ class OrderModelTests(TestCase):
             subtotal=self.product.price,
         )
         self.assertEqual(OrderItem.objects.filter(order=order).count(), 1)
+        order_id = order.id
         order.delete()
-        self.assertEqual(OrderItem.objects.filter(order=order).count(), 0)
+        self.assertEqual(OrderItem.objects.filter(order_id=order_id).count(), 0)
 
     def test_product_deletion_protected_by_order_items(self):
         order = Order.objects.create(user=self.user, total_amount=Decimal('999.99'))

@@ -30,7 +30,7 @@ def order_create(*, user: User, items: list[dict]) -> Order:
         order_items = []
 
         product_ids = [item['product_id'] for item in items]
-        products = Product.objects.filter(id__in=product_ids).select_for_update()
+        products = Product.objects.filter(id__in=product_ids).order_by('id').select_for_update()
         product_map = {p.id: p for p in products}
 
         for item_data in items:
@@ -72,23 +72,36 @@ def order_create(*, user: User, items: list[dict]) -> Order:
 
 
 def order_cancel(*, order: Order, user: User) -> Order:
-    if not user.is_staff and order.user_id != user.id:
-        raise ApplicationError('You do not have permission to cancel this order.', status_code=403)
-
-    if order.status != OrderStatus.PENDING:
-        raise ApplicationError(f'Cannot cancel an order that is already in {order.status} status.')
-
     with transaction.atomic():
-        order.status = OrderStatus.CANCELED
-        order.save(update_fields=['status', 'updated_at'])
+        db_order = Order.objects.select_for_update().get(id=order.id)
 
-    return order
+        if not user.is_staff and db_order.user_id != user.id:
+            raise ApplicationError('You do not have permission to cancel this order.', status_code=403)
+
+        if db_order.status != OrderStatus.PENDING:
+            raise ApplicationError(f'Cannot cancel an order that is already in {db_order.status} status.')
+
+        db_order.status = OrderStatus.CANCELED
+        db_order.save(update_fields=['status', 'updated_at'])
+        order.status = db_order.status
+
+    return db_order
 
 
 def order_reduce_stock(*, order: Order) -> None:
     with transaction.atomic():
-        for item in order.items.select_related('product').all():
-            product = Product.objects.select_for_update().get(id=item.product.id)
+        items = order.items.all()
+        item_map = {item.product_id: item.quantity for item in items}
+        #sort to prevent deadlock
+        product_ids = sorted(list(item_map.keys()))
+
+        products = Product.objects.filter(id__in=product_ids).order_by('id').select_for_update()
+        product_map = {p.id: p for p in products}
+
+        for item in items:
+            product = product_map.get(item.product_id)
+            if not product:
+                raise ApplicationError(f'Product with ID {item.product_id} does not exist.')
 
             if product.stock < item.quantity:
                 raise ApplicationError(
@@ -101,21 +114,33 @@ def order_reduce_stock(*, order: Order) -> None:
 
 
 def order_mark_paid(*, order: Order) -> Order:
-    if order.status != OrderStatus.PENDING:
-        raise ApplicationError(f'Cannot mark order as paid from {order.status} status.')
-
     with transaction.atomic():
-        order_reduce_stock(order=order)
-        order.status = OrderStatus.PAID
-        order.save(update_fields=['status', 'updated_at'])
+        db_order = Order.objects.select_for_update().get(id=order.id)
 
-    return order
+        if db_order.status != OrderStatus.PENDING:
+            raise ApplicationError(f'Cannot mark order as paid from {db_order.status} status.')
+
+        order_reduce_stock(order=db_order)
+        db_order.status = OrderStatus.PAID
+        db_order.save(update_fields=['status', 'updated_at'])
+        order.status = db_order.status
+
+    return db_order
 
 
 def order_restore_stock(*, order: Order) -> None:
     with transaction.atomic():
-        for item in order.items.select_related('product').all():
-            product = Product.objects.select_for_update().get(id=item.product.id)
+        items = order.items.all()
+        product_ids = sorted(list({item.product_id for item in items}))
+
+        products = Product.objects.filter(id__in=product_ids).order_by('id').select_for_update()
+        product_map = {p.id: p for p in products}
+
+        for item in items:
+            product = product_map.get(item.product_id)
+            if not product:
+                raise ApplicationError(f'Product with ID {item.product_id} does not exist.')
+
             product.stock += item.quantity
             product.save(update_fields=['stock', 'updated_at'])
 
@@ -124,23 +149,27 @@ def order_admin_update_status(*, order: Order, status: str) -> Order:
     if status not in OrderStatus.values:
         raise ApplicationError(f'Invalid order status: {status}')
 
-    if order.status == OrderStatus.CANCELED:
-        raise ApplicationError('Cannot transition from CANCELED state.')
-
-    if order.status == OrderStatus.PAID and status == OrderStatus.PENDING:
-        raise ApplicationError('Cannot revert a PAID order back to PENDING.')
-
-    if order.status == status:
-        return order
-
     with transaction.atomic():
-        if status == OrderStatus.PAID:
-            order = order_mark_paid(order=order)
-        elif status == OrderStatus.CANCELED:
-            if order.status == OrderStatus.PAID:
-                order_restore_stock(order=order)
-            order.status = OrderStatus.CANCELED
-            order.save(update_fields=['status', 'updated_at'])
+        db_order = Order.objects.select_for_update().get(id=order.id)
 
-    return order
+        if db_order.status == OrderStatus.CANCELED:
+            raise ApplicationError('Cannot transition from CANCELED state.')
+
+        if db_order.status == OrderStatus.PAID and status == OrderStatus.PENDING:
+            raise ApplicationError('Cannot revert a PAID order back to PENDING.')
+
+        if db_order.status == status:
+            return db_order
+
+        if status == OrderStatus.PAID:
+            db_order = order_mark_paid(order=db_order)
+        elif status == OrderStatus.CANCELED:
+            if db_order.status == OrderStatus.PAID:
+                order_restore_stock(order=db_order)
+            db_order.status = OrderStatus.CANCELED
+            db_order.save(update_fields=['status', 'updated_at'])
+
+        order.status = db_order.status
+
+    return db_order
 

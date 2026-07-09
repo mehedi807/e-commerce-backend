@@ -25,7 +25,7 @@ class UserManagerTests(TestCase):
         self.assertFalse(user.is_superuser)
 
     def test_create_user_normalizes_email(self):
-        """Email normalization should only lowercase the domain portion of the address."""
+        """Email normalization should lowercase the entire address."""
         user = User.objects.create_user(
             email='Alice@SHOP.COM',
             password='P@ssw0rd123!',
@@ -33,7 +33,7 @@ class UserManagerTests(TestCase):
             last_name='Vance',
         )
 
-        self.assertEqual(user.email, 'Alice@shop.com')
+        self.assertEqual(user.email, 'alice@shop.com')
 
     def test_create_user_without_email_raises(self):
         with self.assertRaises(ValueError):
@@ -55,6 +55,22 @@ class UserManagerTests(TestCase):
         with self.assertRaises(ValidationError):
             User.objects.create_user(
                 email='duplicate.customer@shop.com',
+                password='AnotherPassword2!',
+                first_name='Second',
+                last_name='Customer',
+            )
+
+    def test_duplicate_email_case_insensitive(self):
+        User.objects.create_user(
+            email='duplicate.customer@shop.com',
+            password='ValidPassword1!',
+            first_name='First',
+            last_name='Customer',
+        )
+
+        with self.assertRaises(ValidationError):
+            User.objects.create_user(
+                email='Duplicate.Customer@SHOP.COM',
                 password='AnotherPassword2!',
                 first_name='Second',
                 last_name='Customer',
