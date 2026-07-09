@@ -3,6 +3,7 @@ from django.db.models import QuerySet
 
 from core.exceptions import ApplicationError
 from products.constants import CATEGORY_TREE_CACHE_KEY, CATEGORY_TREE_CACHE_TTL
+from products.filters import ProductFilter
 from products.models import Category, Product
 from products import services
 
@@ -10,7 +11,11 @@ from products import services
 
 def product_list(*, filters: dict | None = None) -> QuerySet[Product]:
     qs = Product.objects.select_related('category').all()
+    if filters:
+        filterset = ProductFilter(data=filters, queryset=qs)
+        qs = filterset.qs
     return qs
+
 
 
 def product_get_by_id(*, product_id: int) -> Product:

@@ -3,8 +3,9 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from products.filters import ProductFilter
+from core.pagination import StandardLimitOffsetPagination
 from products import selectors, services
+
 
 
 class CategoryOutputSerializer(serializers.Serializer):
@@ -53,10 +54,7 @@ class ProductListAPI(APIView):
 
         qs = selectors.product_list(filters=filter_serializer.validated_data)
 
-        filterset = ProductFilter(data=request.query_params, queryset=qs)
-        qs = filterset.qs
 
-        from core.pagination import StandardLimitOffsetPagination
         paginator = StandardLimitOffsetPagination()
         page = paginator.paginate_queryset(qs, request, view=self)
 

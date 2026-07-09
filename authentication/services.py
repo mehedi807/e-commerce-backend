@@ -1,5 +1,7 @@
 from django.db import IntegrityError, transaction
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from authentication.models import User
 from core.exceptions import ApplicationError
 
@@ -26,7 +28,6 @@ def user_create(
 
 
 def user_get_tokens(*, user: User) -> dict[str, str]:
-    from rest_framework_simplejwt.tokens import RefreshToken
     refresh = RefreshToken.for_user(user)
     return {
         'refresh': str(refresh),

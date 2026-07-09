@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Optional
 
 from django.core.cache import cache
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, transaction, models
 from django.utils.text import slugify
 
 from core.exceptions import ApplicationError
@@ -71,7 +71,10 @@ def product_update(*, product: Product, data: dict) -> Product:
 
 
 def product_delete(*, product: Product) -> None:
-    product.delete()
+    try:
+        product.delete()
+    except models.ProtectedError:
+        raise ApplicationError('Cannot delete a product that has been ordered.', status_code=400)
 
 
 def category_create(
