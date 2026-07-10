@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'authentication',
     'products',
     'orders',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -134,3 +135,16 @@ SPECTACULAR_SETTINGS = {
 
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+
+STRIPE_SECRET_KEY = env.str('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = env.str('STRIPE_PUBLISHABLE_KEY', default='')
+STRIPE_WEBHOOK_SECRET = env.str('STRIPE_WEBHOOK_SECRET', default='')
+
+BKASH_APP_KEY = env.str('BKASH_APP_KEY', default='')
+BKASH_APP_SECRET = env.str('BKASH_APP_SECRET', default='')
+BKASH_USERNAME = env.str('BKASH_USERNAME', default='')
+BKASH_PASSWORD = env.str('BKASH_PASSWORD', default='')
+BKASH_BASE_URL = env.str('BKASH_BASE_URL', default='')
+BKASH_CALLBACK_URL = env.str('BKASH_CALLBACK_URL', default='')
+BKASH_FRONTEND_REDIRECT_URL = env.str('BKASH_FRONTEND_REDIRECT_URL', default='')
+

@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/admin/categories/', include((category_patterns, 'categories-admin'), namespace='categories-admin')),
     path('api/orders/', include(('orders.urls_user', 'orders-user'), namespace='orders')),
     path('api/admin/orders/', include(('orders.urls_admin', 'orders-admin'), namespace='orders-admin')),
+    path('api/payments/', include(('payments.urls', 'payments'), namespace='payments')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]
