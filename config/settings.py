@@ -139,6 +139,8 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 STRIPE_SECRET_KEY = env.str('STRIPE_SECRET_KEY', default='')
 STRIPE_PUBLISHABLE_KEY = env.str('STRIPE_PUBLISHABLE_KEY', default='')
 STRIPE_WEBHOOK_SECRET = env.str('STRIPE_WEBHOOK_SECRET', default='')
+STRIPE_SUCCESS_URL = env.str('STRIPE_SUCCESS_URL', default='')
+STRIPE_CANCEL_URL = env.str('STRIPE_CANCEL_URL', default='')
 
 BKASH_APP_KEY = env.str('BKASH_APP_KEY', default='')
 BKASH_APP_SECRET = env.str('BKASH_APP_SECRET', default='')

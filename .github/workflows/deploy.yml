@@ -61,7 +61,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "docker-compose.yml"
-          target: "/opt/eCommerce_backend"
+          target: "/opt/ecommerce"
 
       - name: Deploy on VPS
         uses: appleboy/ssh-action@v1.2.0
@@ -78,8 +78,8 @@ jobs:
           script: |
             bash -c '
             set -e
-            mkdir -p /opt/eCommerce_backend
-            cd /opt/eCommerce_backend
+            mkdir -p /opt/ecommerce
+            cd /opt/ecommerce
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 

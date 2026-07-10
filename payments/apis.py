@@ -34,7 +34,7 @@ class PaymentInitiateAPI(APIView):
         payment_id = serializers.IntegerField()
         transaction_id = serializers.CharField()
         client_secret = serializers.CharField(required=False, allow_null=True)
-        bkash_url = serializers.URLField(required=False, allow_null=True)
+        checkout_url = serializers.CharField(required=False, allow_null=True)
 
     def post(self, request):
         input_serializer = self.InputSerializer(data=request.data)
@@ -48,29 +48,6 @@ class PaymentInitiateAPI(APIView):
         initiation_data = services.payment_initiate(order=order, provider=provider)
         output = self.OutputSerializer(initiation_data).data
         return Response(output, status=status.HTTP_201_CREATED)
-
-
-class PaymentConfirmStripeAPI(APIView):
-    permission_classes = [IsAuthenticated]
-    description = "Manually check and confirm the status of a Stripe payment intent."
-
-    class InputSerializer(serializers.Serializer):
-        transaction_id = serializers.CharField()
-
-    OutputSerializer = PaymentOutputSerializer
-
-    def post(self, request):
-        input_serializer = self.InputSerializer(data=request.data)
-        input_serializer.is_valid(raise_exception=True)
-
-        transaction_id = input_serializer.validated_data['transaction_id']
-
-        payment = services.payment_confirm_stripe(transaction_id=transaction_id)
-        if not request.user.is_staff and payment.order.user_id != request.user.id:
-            return Response({"detail": "You do not have permission to access this payment."}, status=403)
-
-        output = self.OutputSerializer(payment).data
-        return Response(output)
 
 
 class PaymentExecuteBkashAPI(APIView):
@@ -109,8 +86,6 @@ class PaymentQueryBkashAPI(APIView):
         amount = serializers.CharField()
         transactionStatus = serializers.CharField()
         merchantInvoiceNumber = serializers.CharField()
-        statusCode = serializers.CharField()
-        statusMessage = serializers.CharField()
 
     def post(self, request):
         input_serializer = self.InputSerializer(data=request.data)
@@ -156,24 +131,6 @@ class StripeWebhookAPI(APIView):
 
         services.payment_handle_stripe_webhook(payload=request.body, sig_header=sig_header)
         return Response({"status": "received"}, status=status.HTTP_200_OK)
-
-
-class BkashCallbackAPI(APIView):
-    permission_classes = [AllowAny]
-    description = "Redirect target for bKash payment checkout flow."
-
-    def get(self, request):
-        payment_id = request.query_params.get('paymentID')
-        status_param = request.query_params.get('status')
-
-        if not payment_id or not status_param:
-            return Response({"detail": "Missing paymentID or status query parameters"}, status=status.HTTP_400_BAD_REQUEST)
-
-        result = services.payment_handle_bkash_callback(payment_id=payment_id, status=status_param)
-        
-        frontend_url = settings.BKASH_FRONTEND_REDIRECT_URL.rstrip('?')
-        redirect_target = f"{frontend_url}?status={result['status']}&paymentID={payment_id}"
-        return HttpResponseRedirect(redirect_target)
 
 
 @method_decorator(csrf_exempt, name='dispatch')

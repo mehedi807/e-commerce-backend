@@ -18,6 +18,20 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   web:
     image: ${IMAGE_REPO}:${IMAGE_TAG}
     command: >
@@ -25,13 +39,14 @@ services:
              python manage.py collectstatic --noinput &&
              gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8001:8000"
     volumes:
-      - /opt/eCommerce_backend/staticfiles:/app/staticfiles
+      - /opt/ecommerce/staticfiles:/app/staticfiles
     env_file:
       - .env
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
     restart: unless-stopped
     healthcheck:
       test:
@@ -48,6 +63,8 @@ services:
       start_period: 30s
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     logging:
       driver: "json-file"
