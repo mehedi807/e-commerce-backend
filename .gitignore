@@ -9,7 +9,6 @@ env/
 .env
 
 # Documentation
-docs/
 .docs/
 
 # IDE and cache directories
